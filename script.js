@@ -71,22 +71,35 @@ async function submitForm(ev) {
   const fd = new FormData();
   fd.append("json", new Blob([JSON.stringify(payload)], { type: "application/json" }));
 
-  const photo = document.getElementById("photo").files?.[0];
-  if (photo) fd.append("photo", photo, photo.name);
+    const photo = document.getElementById("photo").files?.[0];
 
-  setMsg(submitMsg, "Submitting...", true);
+  // If no photo selected, send JSON (most reliable on phones)
+  if (!photo) {
+    setMsg(submitMsg, "Submitting (JSON)...", true);
 
-  const res = await fetch(`${backend}/submit`, {
-    method: "POST",
-    body: fd
-  });
+    const res = await fetch(`${backend}/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
-  const text = await res.text();
-  if (!res.ok) {
-    setMsg(submitMsg, `Submit failed: HTTP ${res.status} — ${text}`, false);
+    const text = await res.text();
+    if (!res.ok) {
+      setMsg(submitMsg, `Submit failed: HTTP ${res.status} — ${text}`, false);
+      return;
+    }
+    setMsg(submitMsg, `Success: ${text}`, true);
     return;
   }
-  setMsg(submitMsg, `Success: ${text}`, true);
+
+  // If photo selected, send multipart
+  const fd = new FormData();
+  fd.append("json", new Blob([JSON.stringify(payload)], { type: "application/json" }));
+  fd.append("photo", photo, photo.name);
+
+  setMsg(submitMsg, "Submitting (Photo)...", true);
+
+  const res = await fetch(`${backend}/submit`, { method: "POST", body: fd });
 }
 
 document.getElementById("loadBtn").addEventListener("click", loadConfig);
@@ -95,3 +108,4 @@ document.getElementById("scanForm").addEventListener("submit", submitForm);
 // Auto-fill task if URL has ?task=...
 const t = qs("task");
 if (t) document.getElementById("taskId").value = t;
+
