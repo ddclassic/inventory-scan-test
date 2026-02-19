@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Inventory Scan (TEST)</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 16px; max-width: 680px; }
+    .row { margin: 10px 0; }
+    label { display:block; font-weight: 600; margin-bottom: 6px; }
+    input, select, textarea { width: 100%; padding: 10px; box-sizing: border-box; }
+    button { padding: 12px 14px; font-weight: 700; cursor: pointer; }
+    .hint { color:#555; font-size: 0.95em; }
+    .ok { color: #0a7; }
+    .bad { color: #b00; }
+    .card { border:1px solid #ddd; border-radius: 10px; padding: 12px; margin: 12px 0; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap: 10px; }
+    @media (max-width: 640px){ .grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <h2>Inventory Scan (TEST)</h2>
+
+  <div class="card">
+    <div class="row">
+      <label>Backend URL (PowerShell Listener)</label>
+      <input id="backendUrl" placeholder="http://YOUR-SERVER:8080" />
+      <div class="hint">Tip: use your LAN IP, e.g. <code>http://192.168.1.50:8080</code></div>
+    </div>
+
+    <div class="row">
+      <label>Task ID (from QR or manual)</label>
+      <input id="taskId" placeholder="e.g. 86afjbm5k" />
+      <div class="hint">For testing you can use: 86afjbm5k / 86afjbm87 / 86afjbm9v</div>
+    </div>
+
+    <div class="row">
+      <button id="loadBtn" type="button">Load Dropdown Options</button>
+      <div id="loadMsg" class="hint"></div>
+    </div>
+  </div>
+
+  <form id="scanForm" class="card">
+    <div class="grid">
+      <div class="row">
+        <label>Action</label>
+        <select id="action">
+          <option value="CHECKOUT">CHECKOUT</option>
+          <option value="RETURN">RETURN</option>
+          <option value="MOVE">MOVE</option>
+          <option value="INSTALL">INSTALL</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label>Checked Out By</label>
+        <select id="checkedOutBy"></select>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="row">
+        <label>Status</label>
+        <select id="status"></select>
+      </div>
+      <div class="row">
+        <label>Condition</label>
+        <select id="condition"></select>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="row">
+        <label>Building</label>
+        <select id="building"></select>
+      </div>
+      <div class="row">
+        <label>Shelf</label>
+        <select id="shelf"></select>
+      </div>
+    </div>
+
+    <div class="row">
+      <label>Tote_Box</label>
+      <select id="toteBox"></select>
+    </div>
+
+    <div class="row">
+      <label>Checkout Reason</label>
+      <textarea id="reason" rows="3" placeholder="Why is this part being checked out / moved / installed?"></textarea>
+    </div>
+
+    <div class="row">
+      <label>Photo (optional for test)</label>
+      <input id="photo" type="file" accept="image/*" />
+      <div class="hint">If you want to enforce photo later, we can require it for INSTALL/CHECKOUT.</div>
+    </div>
+
+    <div class="row">
+      <button type="submit">Submit Update</button>
+      <div id="submitMsg" class="hint"></div>
+    </div>
+  </form>
+
+<script src="./script.js"></script>
+</body>
+</html>
