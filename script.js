@@ -23,25 +23,38 @@ function fillSelect(sel, items, placeholder) {
 }
 
 async function loadConfig() {
-  const backend = document.getElementById("backendUrl").value.trim();
+  let backend = document.getElementById("backendUrl").value.trim();
   const msg = document.getElementById("loadMsg");
+
   if (!backend) { setMsg(msg, "Enter Backend URL first.", false); return; }
 
-  const res = await fetch(`${backend}/config`, { method: "GET" });
-  if (!res.ok) {
-    setMsg(msg, `Config load failed: HTTP ${res.status}`, false);
-    return;
+  // sanitize: remove trailing slashes + remove accidental /config
+  backend = backend.replace(/\/+$/, "");
+  backend = backend.replace(/\/config$/i, "");
+
+  try {
+    const res = await fetch(`${backend}/config`, { method: "GET" });
+
+    const text = await res.text();
+    if (!res.ok) {
+      setMsg(msg, `Config load failed: HTTP ${res.status} — ${text}`, false);
+      return;
+    }
+
+    const cfg = JSON.parse(text);
+
+    fillSelect(document.getElementById("status"), cfg.statusOptions, "— Status —");
+    fillSelect(document.getElementById("building"), cfg.buildingOptions, "— Building —");
+    fillSelect(document.getElementById("shelf"), cfg.shelfOptions, "— Shelf —");
+    fillSelect(document.getElementById("toteBox"), cfg.toteBoxOptions, "— Tote/Box —");
+    fillSelect(document.getElementById("checkedOutBy"), cfg.checkedOutByOptions, "— Employee —");
+    fillSelect(document.getElementById("condition"), cfg.conditionOptions, "— Condition —");
+
+    setMsg(msg, "Dropdown options loaded.", true);
+  } catch (err) {
+    // This is what you'll see if HTTPS→HTTP is blocked (mixed content)
+    setMsg(msg, `Fetch failed: ${err.message}. If you're on GitHub (https), you likely need an https tunnel.`, false);
   }
-  const cfg = await res.json();
-
-  fillSelect(document.getElementById("status"), cfg.statusOptions, "— Status —");
-  fillSelect(document.getElementById("building"), cfg.buildingOptions, "— Building —");
-  fillSelect(document.getElementById("shelf"), cfg.shelfOptions, "— Shelf —");
-  fillSelect(document.getElementById("toteBox"), cfg.toteBoxOptions, "— Tote/Box —");
-  fillSelect(document.getElementById("checkedOutBy"), cfg.checkedOutByOptions, "— Employee —");
-  fillSelect(document.getElementById("condition"), cfg.conditionOptions, "— Condition —");
-
-  setMsg(msg, "Dropdown options loaded.", true);
 }
 
 async function submitForm(ev) {
@@ -109,5 +122,6 @@ document.getElementById("scanForm").addEventListener("submit", submitForm);
 // Auto-fill task if URL has ?task=...
 const t = qs("task");
 if (t) document.getElementById("taskId").value = t;
+
 
 
