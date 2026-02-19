@@ -60,7 +60,9 @@ async function loadConfig() {
 async function submitForm(ev) {
   ev.preventDefault();
 
-  const backend = document.getElementById("backendUrl").value.trim();
+  let backend = document.getElementById("backendUrl").value.trim();
+  backend = backend.replace(/\/+$/, "").replace(/\/submit$/i, "");
+
   const submitMsg = document.getElementById("submitMsg");
   if (!backend) { setMsg(submitMsg, "Enter Backend URL first.", false); return; }
 
@@ -80,40 +82,44 @@ async function submitForm(ev) {
     reason: document.getElementById("reason").value || ""
   };
 
-  // Build multipart request so we can include optional photo
-  const fd = new FormData();
-  fd.append("json", new Blob([JSON.stringify(payload)], { type: "application/json" }));
+  const photo = document.getElementById("photo").files?.[0];
 
-    const photo = document.getElementById("photo").files?.[0];
-
-  // If no photo selected, send JSON (most reliable on phones)
+  // If no photo selected, send JSON (best for testing)
   if (!photo) {
     setMsg(submitMsg, "Submitting (JSON)...", true);
 
-  const res = await fetch(`${backend}/submit`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-
+    const res = await fetch(`${backend}/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
     const text = await res.text();
     if (!res.ok) {
       setMsg(submitMsg, `Submit failed: HTTP ${res.status} — ${text}`, false);
       return;
     }
+
     setMsg(submitMsg, `Success: ${text}`, true);
     return;
   }
 
   // If photo selected, send multipart
+  setMsg(submitMsg, "Submitting (Photo)...", true);
+
   const fd = new FormData();
   fd.append("json", new Blob([JSON.stringify(payload)], { type: "application/json" }));
   fd.append("photo", photo, photo.name);
 
-  setMsg(submitMsg, "Submitting (Photo)...", true);
-
   const res = await fetch(`${backend}/submit`, { method: "POST", body: fd });
+  const text = await res.text();
+
+  if (!res.ok) {
+    setMsg(submitMsg, `Submit failed: HTTP ${res.status} — ${text}`, false);
+    return;
+  }
+
+  setMsg(submitMsg, `Success: ${text}`, true);
 }
 
 document.getElementById("loadBtn").addEventListener("click", loadConfig);
@@ -122,6 +128,7 @@ document.getElementById("scanForm").addEventListener("submit", submitForm);
 // Auto-fill task if URL has ?task=...
 const t = qs("task");
 if (t) document.getElementById("taskId").value = t;
+
 
 
 
