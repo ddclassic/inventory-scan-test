@@ -77,11 +77,12 @@ async function submitForm(ev) {
   if (!photo) {
     setMsg(submitMsg, "Submitting (JSON)...", true);
 
-    const res = await fetch(`${backend}/submit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+  const res = await fetch(`${backend}/submit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
 
     const text = await res.text();
     if (!res.ok) {
@@ -108,4 +109,5 @@ document.getElementById("scanForm").addEventListener("submit", submitForm);
 // Auto-fill task if URL has ?task=...
 const t = qs("task");
 if (t) document.getElementById("taskId").value = t;
+
 
