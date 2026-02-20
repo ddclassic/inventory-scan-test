@@ -1,3 +1,15 @@
+// === DEFAULTS (set once) ===
+const DEFAULT_BACKEND = "http://192.168.1.10:8080";   // <-- your gateway
+const HIDE_BACKEND_FIELD = true;
+const HIDE_TASK_FIELD = true;
+
+function normalizeBackend(raw) {
+  let b = (raw || "").trim();
+  b = b.replace(/\/+$/, "").replace(/\/(config|submit)$/i, "");
+  if (b && !/^https?:\/\//i.test(b)) b = "http://" + b;
+  return b;
+}
+
 function qs(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
@@ -23,7 +35,9 @@ function fillSelect(sel, items, placeholder) {
 }
 
 async function loadConfig() {
-  let backend = document.getElementById("backendUrl").value.trim();
+  const backend = normalizeBackend(
+  document.getElementById("backendUrl").value || DEFAULT_BACKEND
+);
   const msg = document.getElementById("loadMsg");
 
   if (!backend) { setMsg(msg, "Enter Backend URL first.", false); return; }
@@ -60,8 +74,9 @@ async function loadConfig() {
 async function submitForm(ev) {
   ev.preventDefault();
 
-  let backend = document.getElementById("backendUrl").value.trim();
-  backend = backend.replace(/\/+$/, "").replace(/\/submit$/i, "");
+  const backend = normalizeBackend(
+  document.getElementById("backendUrl").value || DEFAULT_BACKEND
+);
 
   const submitMsg = document.getElementById("submitMsg");
   if (!backend) { setMsg(submitMsg, "Enter Backend URL first.", false); return; }
@@ -125,9 +140,33 @@ async function submitForm(ev) {
 document.getElementById("loadBtn").addEventListener("click", loadConfig);
 document.getElementById("scanForm").addEventListener("submit", submitForm);
 
-// Auto-fill task if URL has ?task=...
-const t = qs("task");
-if (t) document.getElementById("taskId").value = t;
+// Auto-fill backend + task from QR (?task=)
+document.addEventListener("DOMContentLoaded", async () => {
+  const backendEl = document.getElementById("backendUrl");
+  const taskEl = document.getElementById("taskId");
+
+  // Auto-fill backend
+  backendEl.value = DEFAULT_BACKEND;
+
+  // Auto-fill task
+  const t = qs("task");
+  if (t) taskEl.value = t;
+
+  // Hide fields (optional)
+  if (HIDE_BACKEND_FIELD) {
+    const row = backendEl.closest(".row") || backendEl.parentElement;
+    if (row) row.style.display = "none";
+  }
+  if (HIDE_TASK_FIELD) {
+    const row = taskEl.closest(".row") || taskEl.parentElement;
+    if (row) row.style.display = "none";
+  }
+
+  // Auto-load dropdowns
+  try { await loadConfig(); } catch {}
+});
+
+
 
 
 
