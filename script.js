@@ -1,3 +1,21 @@
+// ===== DEFAULTS =====
+const DEFAULT_BACKEND = "http://192.168.1.10:8080"; // <-- change to your PC IP
+const AUTO_LOAD_DROPDOWNS = true;
+
+function normalizeBackend(raw) {
+  let b = (raw || "").trim();
+
+  // common typos / cleanup
+  b = b.replace(/^http\/\//i, "http://");     // fixes "http//"
+  b = b.replace(/\/+$/, "");                  // remove trailing slashes
+  b = b.replace(/\/(config|submit)$/i, "");   // remove accidental /config or /submit
+
+  // if no scheme (ex: 192.168.1.10:8080) add http://
+  if (b && !/^https?:\/\//i.test(b)) b = "http://" + b;
+
+  return b;
+}
+
 // === DEFAULTS (set once) ===
 const DEFAULT_BACKEND = "http://192.168.1.10:8080";   // <-- your gateway
 const HIDE_BACKEND_FIELD = true;
@@ -35,23 +53,22 @@ function fillSelect(sel, items, placeholder) {
 }
 
 async function loadConfig() {
-  const backend = normalizeBackend(
-  document.getElementById("backendUrl").value || DEFAULT_BACKEND
-);
   const msg = document.getElementById("loadMsg");
 
-  if (!backend) { setMsg(msg, "Enter Backend URL first.", false); return; }
+  const backend = normalizeBackend(
+    document.getElementById("backendUrl").value || DEFAULT_BACKEND
+  );
 
-  // sanitize: remove trailing slashes + remove accidental /config
-  backend = backend.replace(/\/+$/, "");
-  backend = backend.replace(/\/config$/i, "");
+  if (!backend) { setMsg(msg, "Backend URL missing.", false); return; }
+
+  const url = `${backend}/config`;
 
   try {
-    const res = await fetch(`${backend}/config`, { method: "GET" });
-
+    const res = await fetch(url, { method: "GET" });
     const text = await res.text();
+
     if (!res.ok) {
-      setMsg(msg, `Config load failed: HTTP ${res.status} — ${text}`, false);
+      setMsg(msg, `Config load failed: ${url} — HTTP ${res.status}`, false);
       return;
     }
 
@@ -64,10 +81,9 @@ async function loadConfig() {
     fillSelect(document.getElementById("checkedOutBy"), cfg.checkedOutByOptions, "— Employee —");
     fillSelect(document.getElementById("condition"), cfg.conditionOptions, "— Condition —");
 
-    setMsg(msg, "Dropdown options loaded.", true);
+    setMsg(msg, `Dropdowns loaded`, true);
   } catch (err) {
-    // This is what you'll see if HTTPS→HTTP is blocked (mixed content)
-    setMsg(msg, `Fetch failed: ${err.message}. If you're on GitHub (https), you likely need an https tunnel.`, false);
+    setMsg(msg, `Fetch failed: ${url} — ${err.message}`, false);
   }
 }
 
@@ -162,9 +178,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (row) row.style.display = "none";
   }
 
-  // Auto-load dropdowns
-  try { await loadConfig(); } catch {}
+document.addEventListener("DOMContentLoaded", async () => {
+  // Auto-fill backend
+  const backendEl = document.getElementById("backendUrl");
+  backendEl.value = DEFAULT_BACKEND;
+
+  // Auto-fill task from QR
+  const t = qs("task");
+  if (t) document.getElementById("taskId").value = t;
+
+  // Auto-load dropdown options
+  if (AUTO_LOAD_DROPDOWNS) {
+    await loadConfig();
+  }
+
+  // Optional: hide the load button so employees never see it
+  const loadBtn = document.getElementById("loadBtn");
+  if (loadBtn) loadBtn.style.display = "none";
 });
+
+
 
 
 
